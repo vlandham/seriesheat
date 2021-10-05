@@ -1,5 +1,13 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Box, Text, Switch, Spinner, Container, Flex } from "@chakra-ui/react";
+import React, { useCallback, useEffect } from "react";
+import {
+  Box,
+  Text,
+  Switch,
+  Spinner,
+  Container,
+  Flex,
+  Link,
+} from "@chakra-ui/react";
 import Search from "./Search";
 import { fetchRatings } from "../utils/dataUtils";
 import useStore from "../store";
@@ -7,7 +15,6 @@ import { Series } from "../types";
 import SeriesDisplay from "./Series";
 import {
   useQueryParam,
-  NumberParam,
   StringParam,
   BooleanParam,
   withDefault,
@@ -58,9 +65,43 @@ const Home = () => {
     ) : seriesLoading ? (
       <Spinner size="xl" mt={4} />
     ) : (
-      <Text mt={4}>
-        Search for a TV series and get an IMDb average rating heatmap!
-      </Text>
+      <Box mt={4}>
+        <Text>
+          Search for a TV series and get a heatmap of average IMDb ratings for
+          each episode!
+        </Text>
+        <Text>
+          Examples:{" "}
+          <Link
+            color="orange.400"
+            href="https://vallandingham.me/seriesheat/#/?id=tt0096697"
+          >
+            The Simpsons
+          </Link>
+          ,{" "}
+          <Link
+            color="orange.400"
+            href="https://vallandingham.me/seriesheat/#/?flip=1&id=tt0149460"
+          >
+            Futurama
+          </Link>
+          ,{" "}
+          <Link
+            color="orange.400"
+            href="https://vallandingham.me/seriesheat/#/?color=1&flip=1&id=tt0056751"
+          >
+            Doctor Who
+          </Link>
+          ,{" "}
+          <Link
+            color="orange.400"
+            href="https://vallandingham.me/seriesheat/#/?color=3&flip=1&id=tt0944947"
+          >
+            Game of Thrones
+          </Link>
+          .
+        </Text>
+      </Box>
     );
 
   return (

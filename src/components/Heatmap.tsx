@@ -270,7 +270,7 @@ const Heatmap = ({
 
   return (
     <Flex width={outerWidth} justify="center">
-      <svg height={height} width={width}>
+      <svg height={height} width={width} style={{ overflow: "visible" }}>
         <g transform={`translate(${0},${0})`}>
           <text
             x={width / 2 + margin.left}
