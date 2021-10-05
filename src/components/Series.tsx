@@ -81,11 +81,10 @@ const SeriesDisplay = ({ series, column, colorScheme }: SeriesProps) => {
     bySeason = bySeason.filter((season) =>
       season.values.some((e: Episode) => e.averageRating)
     );
-    // console.log("by season", bySeason);
     return bySeason;
   }, [series]);
 
-  console.log("by season", bySeasonData);
+  // console.log("by season", bySeasonData);
 
   const colorScale = useMemo(() => {
     const colors = COLOR_SCHEMES[colorScheme];

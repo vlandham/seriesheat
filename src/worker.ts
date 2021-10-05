@@ -6,15 +6,13 @@ const workerUrl = new URL(
 );
 const wasmUrl = new URL("sql.js-httpvfs/dist/sql-wasm.wasm", import.meta.url);
 
-
 export async function loadWorker() {
-
   const worker = await createDbWorker(
     [
       {
         virtualFilename: "imdb",
         from: "jsonconfig",
-        configUrl: "db1/config.json",
+        configUrl: "db4/config.json",
       },
     ],
     workerUrl.toString(),
@@ -24,7 +22,7 @@ export async function loadWorker() {
   // const result = await worker.db.query(
   //   `select * from titles t where t.primaryTitle like "%arrested%";`
   // );
-  return worker
+  return worker;
 
   // console.log(result);
 
