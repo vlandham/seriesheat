@@ -13,7 +13,25 @@ import ImdbLogo from "./ImdbLogo";
 const COLOR_SCHEMES: Record<string, string[]> = {
   "1": ["#49525E", "#C92913", "#FFAA00", "#F5E033", "#7ECF4C"],
   // "2": ["#C35E34", "#E7A876", "#F0EBD7", "#A6C2A4", "#448C82"],
-  "2": ["#EA5A4E", "#FECDB2", "#F7FAFC", "#8EC3E7", "#1873AF"],
+  "2": [
+    "#d53e4f",
+    "#f46d43",
+    "#fdae61",
+    "#fee08b",
+    "#abdda4",
+    "#66c2a5",
+    "#3288bd",
+  ],
+  "2f": [
+    "#d53e4f",
+    "#fc8d59",
+    "#fee08b",
+    "#ffffbf",
+    "#e6f598",
+    "#99d594",
+    "#3288bd",
+  ],
+  // "2": ["#EA5A4E", "#FECDB2", "#F7FAFC", "#8EC3E7", "#1873AF"],
   "3": ["#5e3c99", "#b2abd2", "#f7f7f7", "#fdb863", "#e66101"],
 };
 
@@ -24,6 +42,22 @@ const LEGEND_VALUES: Array<{ num: number; name: string }> = [
   { num: 6, name: "Bad" },
   { num: 4, name: "Garbage" },
 ];
+
+const LEGEND_SEQ_VALUES: Array<{ num: number; name: string }> = [
+  // { num: 1.4, name: "1" },
+  // { num: 2.4, name: "2" },
+  { num: 3.4, name: "0‒4" },
+  { num: 4.4, name: "4‒5" },
+  { num: 5.4, name: "5‒6" },
+  { num: 6.4, name: "6‒7" },
+  { num: 7.4, name: "7‒8" },
+  { num: 8.4, name: "8‒9" },
+  { num: 9.4, name: "9‒10" },
+  // { num: 10.4, name: "10" },
+];
+
+const SCALE_DOMAIN = [5.0, 6.6, 7.6, 8.6];
+const SCALE_SEQ_DOMAIN = [4, 5, 6, 7, 8, 9];
 
 type SeriesProps = {
   series: Series;
@@ -37,12 +71,14 @@ const Error = () => {
 
 const Legend = ({
   colorScale,
+  values,
 }: {
   colorScale: ScaleThreshold<number, string>;
+  values: Array<{ num: number; name: string }>;
 }) => {
   return (
     <Flex direction="row" mr={2}>
-      {LEGEND_VALUES.map((e) => (
+      {values.map((e) => (
         <Flex
           key={e.name}
           direction="row"
@@ -87,11 +123,18 @@ const SeriesDisplay = ({ series, column, colorScheme }: SeriesProps) => {
   // console.log("by season", bySeasonData);
 
   const colorScale = useMemo(() => {
+    // let scale:
+    //   | ScaleThreshold<number, string>
+    //   | ScaleSequential<string, number> = scaleThreshold<number, string>();
+    // if (colorScheme !== "2") {
     const colors = COLOR_SCHEMES[colorScheme];
 
     const scale = scaleThreshold<number, string>()
-      .domain([5.0, 6.6, 7.6, 8.6])
+      .domain(colorScheme === "2" ? SCALE_SEQ_DOMAIN : SCALE_DOMAIN)
       .range(colors);
+    // } else {
+    // scale = scaleSequential([0, 10], interpolateViridis);
+    // }
     return scale;
   }, [colorScheme]);
 
@@ -101,7 +144,7 @@ const SeriesDisplay = ({ series, column, colorScheme }: SeriesProps) => {
       .range(["white", "black"]);
     if (colorScheme === "2") {
       scale = scaleThreshold<number, string>()
-        .domain([5, 8.6])
+        .domain([4, 9])
         .range(["white", "black", "white"]);
     }
     if (colorScheme === "3") {
@@ -115,6 +158,19 @@ const SeriesDisplay = ({ series, column, colorScheme }: SeriesProps) => {
   const hasData = useMemo(() => {
     return bySeasonData && bySeasonData.length > 0;
   }, [bySeasonData]);
+
+  const legendContent =
+    colorScheme === "2" ? (
+      <Legend
+        colorScale={colorScale as ScaleThreshold<number, string>}
+        values={LEGEND_SEQ_VALUES}
+      />
+    ) : (
+      <Legend
+        colorScale={colorScale as ScaleThreshold<number, string>}
+        values={LEGEND_VALUES}
+      />
+    );
 
   const content = hasData ? (
     <AutoSizedHeatmap
@@ -148,9 +204,7 @@ const SeriesDisplay = ({ series, column, colorScheme }: SeriesProps) => {
             </a>
           </Box>
         </Flex>
-        <Flex>
-          <Legend colorScale={colorScale} />
-        </Flex>
+        <Flex>{legendContent}</Flex>
       </Flex>
       <Flex paddingBottom={3}>{content}</Flex>
     </Flex>

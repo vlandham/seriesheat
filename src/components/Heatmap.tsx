@@ -2,17 +2,13 @@ import React, { useRef, useMemo, useCallback, useState } from "react";
 
 import AutoSizer from "react-virtualized-auto-sizer"; // v^1.0.5
 import { Episode } from "../types";
-import { nest } from "d3-collection";
 import { max as d3Max, ascending, range } from "d3-array";
-import { scaleThreshold, ScaleThreshold } from "d3";
-// import useChartDimensions from "../hooks/useChartDimensions";
-import { Flex, Box } from "@chakra-ui/react";
+import { ScaleThreshold, ScaleSequential } from "d3";
+import { Flex } from "@chakra-ui/react";
 
-const COLOR_SCHEMES: Record<string, string[]> = {
-  "1": ["#49525E", "#C92913", "#FFAA00", "#F5E033", "#7ECF4C"],
-  "2": ["#C35E34", "#E7A876", "#F0EBD7", "#A6C2A4", "#448C82"],
-  "3": ["#49525E", "#C92913", "#FFAA00", "#F5E033", "#7ECF4C"],
-};
+type ColorScale =
+  | ScaleThreshold<number, string>
+  | ScaleSequential<string, number>;
 
 const HeatmapTitle = ({
   value,
@@ -72,7 +68,7 @@ const HeatmapCell = ({
   boxWidth: number;
   boxSpace: number;
   index: number;
-  colorScale: ScaleThreshold<number, string>;
+  colorScale: ColorScale;
   textScale: ScaleThreshold<number, string>;
   column: boolean;
   onHover: (hover: Episode | null) => void;
@@ -103,7 +99,9 @@ const HeatmapCell = ({
         width={boxWidth}
         height={boxWidth}
         fill={
-          episode.averageRating ? colorScale(episode.averageRating) : "#E2E8F0"
+          episode.averageRating
+            ? colorScale(episode.averageRating).toString()
+            : "#E2E8F0"
         }
         style={{ cursor: "pointer" }}
         onClick={onClick}
@@ -141,7 +139,7 @@ const HeatmapColumn = ({
   boxWidth: number;
   boxSpace: number;
   index: number;
-  colorScale: ScaleThreshold<number, string>;
+  colorScale: ColorScale;
   textScale: ScaleThreshold<number, string>;
   column: boolean;
   onHover: (hover: Episode | null) => void;
@@ -177,7 +175,7 @@ type HeatmapProps = {
   episodes: Episode[];
   width: number;
   column: boolean;
-  colorScale: ScaleThreshold<number, string>;
+  colorScale: ColorScale;
   textScale: ScaleThreshold<number, string>;
   onHover: (episode: Episode | null) => void;
   hover: Episode | null;
