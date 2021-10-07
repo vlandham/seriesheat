@@ -192,6 +192,7 @@ const SeriesDisplay = ({ series, column, colorScheme }: SeriesProps) => {
         direction="row"
         align="center"
         justify="space-between"
+        wrap="wrap"
       >
         <Flex direction="row" align="center">
           <Heading>{series.primaryTitle}</Heading>
