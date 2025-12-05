@@ -7,6 +7,14 @@ export type Episode = {
   seasonEpisode: number | string;
 }
 
+export type SearchResult = {
+  tconst: string;
+  primaryTitle: string;
+  startYear?: string | number | null;
+  endYear?: string | number | null;
+  genres?: string | null;
+}
+
 export type Series = {
   primaryTitle: string;
   tconst: string;

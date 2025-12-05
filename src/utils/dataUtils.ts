@@ -1,4 +1,4 @@
-import { Episode } from "../types";
+import { Episode, SearchResult } from "../types";
 import { nest } from "d3-collection";
 import { descending } from "d3-array";
 
@@ -9,7 +9,9 @@ function cleanSearchString(searchString: string): string {
   return cleanString;
 }
 
-export const fetchSearch = async (searchString: string) => {
+export const fetchSearch = async (
+  searchString: string
+): Promise<SearchResult[]> => {
   const cleanString = cleanSearchString(searchString);
   const response = await fetch(
     `${API_BASE_URL}/search?q=${encodeURIComponent(cleanString)}`
@@ -18,7 +20,7 @@ export const fetchSearch = async (searchString: string) => {
     throw new Error(`Search failed: ${response.statusText}`);
   }
   const data = await response.json();
-  return data.results;
+  return data.results as SearchResult[];
 };
 
 export function isNumeric(str: string) {

@@ -3,6 +3,7 @@ import { Flex, Text } from "@chakra-ui/react";
 
 import AsyncSelect from "react-select/async";
 import { fetchSearch } from "../utils/dataUtils";
+import { SearchResult } from "../types";
 
 type Option = {
   value: string;
@@ -26,10 +27,17 @@ const Search = ({ onChange }: SearchProps) => {
       const results = await fetchSearch(inputValue);
       let options: Option[] = [];
       if (results && results) {
-        options = results.slice(0, 30).map((r: any) => ({
-          value: r.tconst,
-          label: r.primaryTitle,
-        }));
+        options = results.slice(0, 30).map((r: SearchResult) => {
+          // Format label with startYear in parentheses if available
+          let label = r.primaryTitle;
+          if (r.startYear) {
+            label = `${r.primaryTitle} (${r.startYear})`;
+          }
+          return {
+            value: r.tconst,
+            label: label,
+          };
+        });
       }
       callback(options);
     },
