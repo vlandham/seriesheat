@@ -1,7 +1,8 @@
 import { Episode } from "../types";
 import { nest } from "d3-collection";
-import { loadWorker } from "../worker";
 import { descending } from "d3-array";
+
+const API_BASE_URL = "https://seriesheat-api.landham.workers.dev/api";
 
 function cleanSearchString(searchString: string): string {
   const cleanString = searchString.replace(/[\W_]+/g, " ");
@@ -10,12 +11,14 @@ function cleanSearchString(searchString: string): string {
 
 export const fetchSearch = async (searchString: string) => {
   const cleanString = cleanSearchString(searchString);
-  const worker = await loadWorker();
-  const results = await worker.db.query(
-    `select t.primaryTitle, t.tconst from searchtitles t where t.primaryTitle match ?;`,
-    [`${cleanString}*`]
+  const response = await fetch(
+    `${API_BASE_URL}/search?q=${encodeURIComponent(cleanString)}`
   );
-  return results;
+  if (!response.ok) {
+    throw new Error(`Search failed: ${response.statusText}`);
+  }
+  const data = await response.json();
+  return data.results;
 };
 
 export function isNumeric(str: string) {
@@ -27,13 +30,20 @@ export function isNumeric(str: string) {
 }
 
 export const fetchRatings = async (parentId: string) => {
-  const worker = await loadWorker();
-  const parentData = await worker.db.query(
-    `select t.tconst, t.primaryTitle from searchtitles t where t.tconst = '${parentId}';`
+  const response = await fetch(
+    `${API_BASE_URL}/series/${encodeURIComponent(parentId)}`
   );
-  let ratingsData = (await worker.db.query(
-    `SELECT e.tconst, e.seasonNumber, e.episodeNumber, r.averageRating, r.numVotes from episodes e  left join ratings r on e.tconst = r.tconst where e.parentTconst = '${parentId}'; `
-  )) as Episode[];
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error(`Series not found: ${parentId}`);
+    }
+    throw new Error(`Failed to fetch ratings: ${response.statusText}`);
+  }
+  const data = await response.json();
+
+  // Extract series info and episodes from API response
+  const parentData = [{ tconst: data.tconst, primaryTitle: data.primaryTitle }];
+  let ratingsData = (data.episodes || []) as Episode[];
   let output: any = {};
 
   console.log("raw", ratingsData);
@@ -74,7 +84,13 @@ export const fetchRatings = async (parentId: string) => {
       (a: Episode, b: Episode) =>
         (a.seasonEpisode as any) - (b.seasonEpisode as any)
     );
-    ratingsData = ratingsData.filter((e) => e.episodeNumber > 0);
+    ratingsData = ratingsData.filter((e) => {
+      const epNum =
+        typeof e.episodeNumber === "number"
+          ? e.episodeNumber
+          : parseInt(e.episodeNumber as string);
+      return !isNaN(epNum) && epNum > 0;
+    });
 
     const byEpisode = nest<Episode, Episode>()
       .key((d) => d.seasonNumber as string)

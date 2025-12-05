@@ -58,7 +58,7 @@ const InfoModal = ({
             >
               IMDb Datasets
             </Link>
-            . Data was downloaded September 24th, 2021
+            . Data was downloaded on December 5th, 2025
           </Text>
           <br />
           <Text>
@@ -74,28 +74,6 @@ const InfoModal = ({
             .
           </Text>
           <br />
-          <Text>
-            The implementation for querying the data uses a static SQLite
-            database queried by the browser using{" "}
-            <Link
-              href="https://github.com/phiresky/sql.js-httpvfs"
-              target="_blank"
-              color="orange.400"
-              isExternal
-            >
-              sql.js-httpvfs
-            </Link>{" "}
-            as described in{" "}
-            <Link
-              href="https://phiresky.github.io/blog/2021/hosting-sqlite-databases-on-github-pages/"
-              target="_blank"
-              color="orange.400"
-              isExternal
-            >
-              phiresky's blog post
-            </Link>
-            .
-          </Text>
         </ModalBody>
 
         <ModalFooter>
