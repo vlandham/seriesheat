@@ -15,7 +15,7 @@ const RadioGroup = ({
 
   const { getRootProps, getRadioProps } = useRadioGroup({
     name: "colorScheme",
-    defaultValue: selected,
+    value: selected,
     onChange: onChange,
   });
   const group = getRootProps();

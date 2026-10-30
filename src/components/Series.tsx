@@ -1,7 +1,6 @@
 import React, { useMemo, useCallback, useState } from "react";
 import { Box, Flex, Heading, Text } from "@chakra-ui/react";
-import { nest } from "d3-collection";
-import { ascending } from "d3-array";
+import { ascending, group } from "d3-array";
 import { scaleThreshold, ScaleThreshold } from "d3-scale";
 
 import { isNumeric } from "../utils/dataUtils";
@@ -104,20 +103,18 @@ const SeriesDisplay = ({ series, column, colorScheme }: SeriesProps) => {
   );
 
   const bySeasonData = useMemo(() => {
-    let bySeason = nest<Episode, Episode[]>()
-      .key((d) => d.seasonNumber.toString())
-      .sortKeys((a, b) => {
-        const aNum = isNumeric(a) ? +a : 100;
-        const bNum = isNumeric(b) ? +b : 100;
-        return ascending(aNum, bNum);
+    const seasonOrder = (key: string) => (isNumeric(key) ? +key : 100);
+    return Array.from(
+      group(series.episodes, (d) => d.seasonNumber.toString()),
+      ([key, values]) => ({
+        key,
+        values: [...values].sort((a, b) =>
+          ascending(+a.episodeNumber, +b.episodeNumber)
+        ),
       })
-      .sortValues((a, b) => ascending(a.episodeNumber, b.episodeNumber))
-      .entries(series.episodes);
-
-    bySeason = bySeason.filter((season) =>
-      season.values.some((e: Episode) => e.averageRating)
-    );
-    return bySeason;
+    )
+      .sort((a, b) => ascending(seasonOrder(a.key), seasonOrder(b.key)))
+      .filter((season) => season.values.some((e) => e.averageRating));
   }, [series]);
 
   // console.log("by season", bySeasonData);

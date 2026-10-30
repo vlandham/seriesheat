@@ -7,19 +7,19 @@ import { Series, } from './types'
 type State = {
   series: Series | null
   seriesLoading: boolean
-  searchId: string | null
+  seriesError: string | null
   setSeries: (series: Series) => void
-  setSearchId: (searchId: string) => void
   setSeriesLoading: (loading: boolean) => void
+  setSeriesError: (error: string) => void
 }
 
 const useStore = create<State>(set => ({
   series: null,
   seriesLoading: false,
-  searchId: null,
-  setSeries: (series: Series) => set(state => ({ series, seriesLoading: false })),
+  seriesError: null,
+  setSeries: (series: Series) => set(state => ({ series, seriesLoading: false, seriesError: null })),
   setSeriesLoading: (loading: boolean) => set(state => ({ seriesLoading: loading })),
-  setSearchId: (searchId: string) => set(state => ({ searchId }))
+  setSeriesError: (error: string) => set(state => ({ series: null, seriesLoading: false, seriesError: error }))
 }))
 
 export default useStore

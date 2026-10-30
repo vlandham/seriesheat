@@ -1,37 +1,43 @@
-import { Episode, SearchResult } from "../types";
-import { nest } from "d3-collection";
-import { descending } from "d3-array";
+import { Episode, SearchResult, Series } from "../types";
+import { group, descending } from "d3-array";
 
-const API_BASE_URL = "https://seriesheat-api.landham.workers.dev/api";
+declare const process: { env: { API_BASE_URL?: string } };
 
-function cleanSearchString(searchString: string): string {
-  const cleanString = searchString.replace(/[\W_]+/g, " ");
-  return cleanString;
+const API_BASE_URL =
+  process.env.API_BASE_URL || "https://seriesheat-api.landham.workers.dev/api";
+
+// IMDb uses the literal string "\N" for missing values
+function nullIfMissing<T>(value: T): T | null {
+  return value === "\\N" ? null : value;
 }
 
 export const fetchSearch = async (
   searchString: string
 ): Promise<SearchResult[]> => {
-  const cleanString = cleanSearchString(searchString);
   const response = await fetch(
-    `${API_BASE_URL}/search?q=${encodeURIComponent(cleanString)}`
+    `${API_BASE_URL}/search?q=${encodeURIComponent(searchString)}`
   );
   if (!response.ok) {
     throw new Error(`Search failed: ${response.statusText}`);
   }
   const data = await response.json();
-  return data.results as SearchResult[];
+  return (data.results as SearchResult[]).map((r) => ({
+    ...r,
+    startYear: nullIfMissing(r.startYear),
+    endYear: nullIfMissing(r.endYear),
+  }));
 };
 
-export function isNumeric(str: string) {
-  if (typeof str != "string") return false; // we only process strings!
+export function isNumeric(value: string | number) {
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value !== "string") return false;
   return (
-    !isNaN(str as unknown as number) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
-    !isNaN(parseFloat(str))
+    !isNaN(value as unknown as number) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
+    !isNaN(parseFloat(value))
   ); // ...and ensure strings of whitespace fail
 }
 
-export const fetchRatings = async (parentId: string) => {
+export const fetchRatings = async (parentId: string): Promise<Series> => {
   const response = await fetch(
     `${API_BASE_URL}/series/${encodeURIComponent(parentId)}`
   );
@@ -42,83 +48,49 @@ export const fetchRatings = async (parentId: string) => {
     throw new Error(`Failed to fetch ratings: ${response.statusText}`);
   }
   const data = await response.json();
+  const rawEpisodes = (data.episodes || []) as Episode[];
 
-  // Extract series info and episodes from API response
-  const parentData = [{ tconst: data.tconst, primaryTitle: data.primaryTitle }];
-  let ratingsData = (data.episodes || []) as Episode[];
-  let output: any = {};
+  // Normalize season / episode numbers. Non-numeric seasons become "U" (unknown)
+  // and non-numeric episodes are numbered sequentially within their season.
+  const seasonEpisodeCounts: Record<string | number, number> = {};
+  const normalized: Episode[] = rawEpisodes.map((episode) => {
+    const seasonNumber = isNumeric(episode.seasonNumber)
+      ? +episode.seasonNumber
+      : "U";
 
-  console.log("raw", ratingsData);
+    let episodeNumber: number;
+    if (isNumeric(episode.episodeNumber)) {
+      episodeNumber = +episode.episodeNumber;
+    } else {
+      episodeNumber = (seasonEpisodeCounts[seasonNumber] ?? 0) + 1;
+      seasonEpisodeCounts[seasonNumber] = episodeNumber;
+    }
 
-  if (ratingsData) {
-    const seasonEpisodeCounts: Record<string | number, number> = {};
+    return { ...episode, seasonNumber, episodeNumber };
+  });
 
-    // ratingsData.sort((a, b) => b.numVotes - a.numVotes)
+  // Drop episode 0 / invalid numbers, then keep the most-voted entry when
+  // IMDb has duplicates for the same season + episode.
+  const valid = normalized.filter((e) => (e.episodeNumber as number) > 0);
+  const bySeasonEpisode = group(
+    valid,
+    (d) => d.seasonNumber,
+    (d) => d.episodeNumber
+  );
 
-    // ratingsData = ratingsData.filter((episode: Episode) => episode.averageRating)
-    ratingsData.forEach((episode: Episode) => {
-      if (isNumeric(episode.seasonNumber as string)) {
-        episode.seasonNumber = parseInt(episode.seasonNumber as string);
-      } else {
-        episode.seasonNumber = "U";
-      }
-
-      if (isNumeric(episode.episodeNumber as string)) {
-        episode.episodeNumber = parseInt(episode.episodeNumber as string);
-      } else {
-        console.log("episode not numeric", episode.episodeNumber);
-        if (!seasonEpisodeCounts[episode.seasonNumber]) {
-          seasonEpisodeCounts[episode.seasonNumber] = 0;
-        }
-        episode.episodeNumber = seasonEpisodeCounts[episode.seasonNumber] + 1;
-        seasonEpisodeCounts[episode.seasonNumber] = episode.episodeNumber;
-      }
-
-      if (isNumeric(episode.seasonNumber as string)) {
-        episode.seasonEpisode =
-          +episode.seasonNumber * 100 + (episode.episodeNumber as number);
-      } else {
-        episode.seasonEpisode =
-          (episode.seasonNumber as string) + episode.episodeNumber.toString();
-      }
+  const episodes: Episode[] = [];
+  bySeasonEpisode.forEach((season) => {
+    season.forEach((dupes) => {
+      const [best] = [...dupes].sort((a, b) =>
+        descending(a.numVotes ?? 0, b.numVotes ?? 0)
+      );
+      episodes.push(best);
     });
-    ratingsData.sort(
-      (a: Episode, b: Episode) =>
-        (a.seasonEpisode as any) - (b.seasonEpisode as any)
-    );
-    ratingsData = ratingsData.filter((e) => {
-      const epNum =
-        typeof e.episodeNumber === "number"
-          ? e.episodeNumber
-          : parseInt(e.episodeNumber as string);
-      return !isNaN(epNum) && epNum > 0;
-    });
+  });
 
-    const byEpisode = nest<Episode, Episode>()
-      .key((d) => d.seasonNumber as string)
-      .key((d) => d.episodeNumber as string)
-      .rollup((d) => {
-        if (d.length > 1) {
-          console.log("duplicate entries", d);
-        }
-        d.sort((a, b) => descending(a.numVotes ?? 0, b.numVotes ?? 0));
-        return d[0];
-      })
-      .entries(ratingsData);
-
-    ratingsData = [];
-    byEpisode.forEach((s) => {
-      s.values.forEach((e: any) => {
-        ratingsData.push(e.value);
-      });
-    });
-    console.log("cleaned", ratingsData);
-  }
-
-  if (parentData && parentData.length > 0) {
-    output = parentData[0];
-    output.episodes = ratingsData;
-  }
-
-  return output;
+  return {
+    tconst: data.tconst,
+    primaryTitle: data.primaryTitle,
+    episodes,
+  };
 };

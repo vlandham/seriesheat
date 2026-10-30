@@ -1,10 +1,9 @@
 export type Episode = {
   tconst: string;
-  averageRating: number;
-  numVotes: number;
+  averageRating: number | null;
+  numVotes: number | null;
   seasonNumber: number | string;
   episodeNumber: number | string;
-  seasonEpisode: number | string;
 }
 
 export type SearchResult = {
@@ -20,10 +19,3 @@ export type Series = {
   tconst: string;
   episodes: Episode[]
 }
-
-export type Margin = {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-};

@@ -1,4 +1,5 @@
 const path = require("path");
+const webpack = require("webpack");
 
 const prod = process.env.NODE_ENV === "production";
 
@@ -46,6 +47,10 @@ module.exports = {
   },
   devtool: prod ? undefined : "source-map",
   plugins: [
+    // Point at a local worker with e.g. API_BASE_URL=http://localhost:8787/api npm start
+    new webpack.DefinePlugin({
+      "process.env.API_BASE_URL": JSON.stringify(process.env.API_BASE_URL || ""),
+    }),
     new HtmlWebpackPlugin({
       template: "index.html",
     }),

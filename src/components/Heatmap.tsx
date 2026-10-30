@@ -1,9 +1,9 @@
-import React, { useRef, useMemo, useCallback, useState } from "react";
+import React, { useMemo, useCallback } from "react";
 
 import AutoSizer from "react-virtualized-auto-sizer"; // v^1.0.5
 import { Episode } from "../types";
-import { max as d3Max, ascending, range } from "d3-array";
-import { ScaleThreshold, ScaleSequential } from "d3";
+import { max as d3Max, range } from "d3-array";
+import { ScaleThreshold, ScaleSequential } from "d3-scale";
 import { Flex } from "@chakra-ui/react";
 
 type ColorScale =
@@ -36,7 +36,7 @@ const HeatmapTitle = ({
   const boxY = column ? boxWidth - boxSize : 0;
   const fontSize = boxWidth / 1.6;
   const fontWeight =
-    hover && hover[contentId as keyof Episode].toString() == value ? 700 : 200;
+    hover && String(hover[contentId as keyof Episode]) === value ? 700 : 200;
   return (
     <g transform={`translate(${x}, ${y})`}>
       {/* <rect width={w} height={h} x={boxX} y={boxY} fill="#A0AEC0"></rect> */}
@@ -85,14 +85,14 @@ const HeatmapCell = ({
     const url = `https://www.imdb.com/title/${episode.tconst}`;
     const newWindow = window.open(url, "_blank", "noopener,noreferrer");
     if (newWindow) newWindow.opener = null;
-  }, []);
+  }, [episode.tconst]);
 
   const onHoverOn = useCallback(() => {
     onHover(episode);
-  }, [episode]);
+  }, [episode, onHover]);
   const onHoverOff = useCallback(() => {
     onHover(null);
-  }, []);
+  }, [onHover]);
   return (
     <g transform={`translate(${x}, ${y})`}>
       <rect
@@ -201,11 +201,6 @@ const Heatmap = ({
     []
   );
 
-  const onHoverCallback = useCallback(
-    (episode: Episode | null) => onHover(episode),
-    [onHover]
-  );
-
   const xTitle = useMemo(() => (column ? "Season" : "Episode"), [column]);
   const yTitle = useMemo(() => (column ? "Episode" : "Season"), [column]);
 
@@ -259,11 +254,11 @@ const Heatmap = ({
 
   const sideColumnContent = useMemo(
     () => (column ? seasonNames : episodeNames),
-    [column]
+    [column, seasonNames, episodeNames]
   );
   const topRowContent = useMemo(
     () => (column ? episodeNames : seasonNames),
-    [column]
+    [column, seasonNames, episodeNames]
   );
 
   return (
