@@ -7,6 +7,7 @@ import {
   Container,
   Flex,
   Link,
+  Heading,
 } from "@chakra-ui/react";
 import Search from "./Search";
 import { fetchRatings } from "../utils/dataUtils";
@@ -64,7 +65,58 @@ const Home = () => {
     setFlip(e.currentTarget.checked);
   }, []);
 
-  const content = seriesLoading ? (
+  const emptyState = (
+    <Box
+      as="section"
+      aria-labelledby="search-prompt-title"
+      mt={{ base: 6, md: 10 }}
+      px={{ base: 6, md: 12 }}
+      py={{ base: 8, md: 12 }}
+      bgGradient="linear(to-br, orange.50, yellow.50)"
+      borderWidth="1px"
+      borderColor="orange.200"
+      borderRadius="xl"
+      textAlign="center"
+      boxShadow="sm"
+    >
+      <Heading
+        as="h2"
+        id="search-prompt-title"
+        fontSize={{ base: "2xl", md: "4xl" }}
+        color="gray.800"
+        mb={4}
+      >
+        Find your next show to visualize
+      </Heading>
+      <Text fontSize={{ base: "lg", md: "xl" }} color="gray.700" maxW="2xl" mx="auto">
+        Use the search above to find and select a TV show. Explore a heatmap of
+        average IMDb ratings for every episode.
+      </Text>
+      <Text mt={6} fontSize="lg" color="gray.700">
+        Or try:{" "}
+        <Link color="orange.700" textDecoration="underline" href="#/?id=tt0096697">
+          The Simpsons
+        </Link>
+        ,{" "}
+        <Link color="orange.700" textDecoration="underline" href="#/?flip=1&id=tt0149460">
+          Futurama
+        </Link>
+        ,{" "}
+        <Link color="orange.700" textDecoration="underline" href="#/?color=1&flip=1&id=tt0056751">
+          Doctor Who
+        </Link>
+        ,{" "}
+        <Link color="orange.700" textDecoration="underline" href="#/?color=3&flip=1&id=tt0944947">
+          Game of Thrones
+        </Link>
+        .
+      </Text>
+    </Box>
+  );
+
+  const content = !searchId ? (
+    emptyState
+  ) : seriesLoading ? (
     <Spinner size="xl" mt={4} />
   ) : seriesError ? (
     <Text mt={4}>
@@ -72,33 +124,7 @@ const Home = () => {
     </Text>
   ) : series ? (
     <SeriesDisplay series={series} column={!flip} colorScheme={colorScheme} />
-  ) : (
-    <Box mt={4}>
-      <Text>
-        Search for a TV series and get a heatmap of average IMDb ratings for
-        each episode!
-      </Text>
-      <Text>
-        Examples:{" "}
-        <Link color="orange.400" href="#/?id=tt0096697">
-          The Simpsons
-        </Link>
-        ,{" "}
-        <Link color="orange.400" href="#/?flip=1&id=tt0149460">
-          Futurama
-        </Link>
-        ,{" "}
-        <Link color="orange.400" href="#/?color=1&flip=1&id=tt0056751">
-          Doctor Who
-        </Link>
-        ,{" "}
-        <Link color="orange.400" href="#/?color=3&flip=1&id=tt0944947">
-          Game of Thrones
-        </Link>
-        .
-      </Text>
-    </Box>
-  );
+  ) : null;
 
   return (
     <Container maxW="container.xl">
