@@ -66,7 +66,14 @@ export const fetchRatings = async (parentId: string): Promise<Series> => {
       seasonEpisodeCounts[seasonNumber] = episodeNumber;
     }
 
-    return { ...episode, seasonNumber, episodeNumber };
+    return {
+      ...episode,
+      seasonNumber,
+      episodeNumber,
+      primaryTitle: nullIfMissing(episode.primaryTitle ?? null),
+      startYear: nullIfMissing(episode.startYear ?? null),
+      runtimeMinutes: nullIfMissing(episode.runtimeMinutes ?? null),
+    };
   });
 
   // Drop episode 0 / invalid numbers, then keep the most-voted entry when

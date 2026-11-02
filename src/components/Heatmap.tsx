@@ -1,14 +1,71 @@
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useRef, useState, memo } from "react";
 
 import AutoSizer from "react-virtualized-auto-sizer"; // v^1.0.5
 import { Episode } from "../types";
 import { max as d3Max, range } from "d3-array";
 import { ScaleThreshold, ScaleSequential } from "d3-scale";
-import { Flex } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
 
 type ColorScale =
   | ScaleThreshold<number, string>
   | ScaleSequential<string, number>;
+
+type CellHoverHandler = (episode: Episode | null, target?: Element) => void;
+
+type TooltipState = {
+  episode: Episode;
+  x: number;
+  y: number;
+  align: "left" | "center" | "right";
+};
+
+const TOOLTIP_TRANSLATE = {
+  left: "translate(0, -100%)",
+  center: "translate(-50%, -100%)",
+  right: "translate(-100%, -100%)",
+};
+
+const EpisodeTooltip = ({ tooltip }: { tooltip: TooltipState }) => {
+  const { episode, x, y, align } = tooltip;
+  const details = [
+    `S${episode.seasonNumber} · E${episode.episodeNumber}`,
+    episode.startYear,
+    episode.runtimeMinutes ? `${episode.runtimeMinutes} min` : null,
+  ].filter(Boolean);
+  return (
+    <Box
+      position="absolute"
+      left={`${x}px`}
+      top={`${y - 6}px`}
+      transform={TOOLTIP_TRANSLATE[align]}
+      pointerEvents="none"
+      zIndex={10}
+      bg="gray.700"
+      color="white"
+      px={3}
+      py={2}
+      borderRadius="md"
+      boxShadow="md"
+      fontSize="sm"
+      maxWidth="260px"
+      width="max-content"
+    >
+      <Text fontWeight="bold" lineHeight="short">
+        {episode.primaryTitle || `Episode ${episode.episodeNumber}`}
+      </Text>
+      <Text color="gray.200">{details.join(" · ")}</Text>
+      <Text color="gray.200">
+        {episode.averageRating != null
+          ? `★ ${episode.averageRating.toFixed(1)}${
+              episode.numVotes
+                ? ` (${episode.numVotes.toLocaleString()} votes)`
+                : ""
+            }`
+          : "Not yet rated"}
+      </Text>
+    </Box>
+  );
+};
 
 const HeatmapTitle = ({
   value,
@@ -54,7 +111,7 @@ const HeatmapTitle = ({
   );
 };
 
-const HeatmapCell = ({
+const HeatmapCell = memo(function HeatmapCell({
   episode,
   boxWidth,
   boxSpace,
@@ -71,8 +128,8 @@ const HeatmapCell = ({
   colorScale: ColorScale;
   textScale: ScaleThreshold<number, string>;
   column: boolean;
-  onHover: (hover: Episode | null) => void;
-}) => {
+  onHover: CellHoverHandler;
+}) {
   const fontSize = boxWidth / 1.8;
   const value = episode?.averageRating?.toFixed(1) || "";
   const x = column
@@ -87,9 +144,12 @@ const HeatmapCell = ({
     if (newWindow) newWindow.opener = null;
   }, [episode.tconst]);
 
-  const onHoverOn = useCallback(() => {
-    onHover(episode);
-  }, [episode, onHover]);
+  const onHoverOn = useCallback(
+    (event: React.MouseEvent<SVGRectElement>) => {
+      onHover(episode, event.currentTarget);
+    },
+    [episode, onHover]
+  );
   const onHoverOff = useCallback(() => {
     onHover(null);
   }, [onHover]);
@@ -123,9 +183,9 @@ const HeatmapCell = ({
       </text>
     </g>
   );
-};
+});
 
-const HeatmapColumn = ({
+const HeatmapColumn = memo(function HeatmapColumn({
   episodes,
   boxWidth,
   boxSpace,
@@ -142,8 +202,8 @@ const HeatmapColumn = ({
   colorScale: ColorScale;
   textScale: ScaleThreshold<number, string>;
   column: boolean;
-  onHover: (hover: Episode | null) => void;
-}) => {
+  onHover: CellHoverHandler;
+}) {
   const x = column ? (boxWidth + boxSpace) * index : 0;
   const y = column ? 0 : (boxWidth + boxSpace) * index;
   return (
@@ -163,7 +223,7 @@ const HeatmapColumn = ({
       ))}
     </g>
   );
-};
+});
 
 type BySeasonRow = {
   key: string;
@@ -199,6 +259,41 @@ const Heatmap = ({
       left: 40,
     }),
     []
+  );
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+
+  // Cells report the hovered <rect>; position the tooltip above its center,
+  // relative to the container. Near the edges, anchor it to one side so it
+  // doesn't spill off-screen.
+  const onCellHover = useCallback<CellHoverHandler>(
+    (episode, target) => {
+      onHover(episode);
+      const container = containerRef.current;
+      if (!episode || !target || !container) {
+        setTooltip(null);
+        return;
+      }
+      const containerBox = container.getBoundingClientRect();
+      const cellBox = target.getBoundingClientRect();
+      const x = cellBox.left - containerBox.left + cellBox.width / 2;
+      const y = cellBox.top - containerBox.top;
+      const align =
+        x < 130 ? "left" : x > containerBox.width - 130 ? "right" : "center";
+      setTooltip({
+        episode,
+        x:
+          align === "left"
+            ? x - cellBox.width / 2
+            : align === "right"
+            ? x + cellBox.width / 2
+            : x,
+        y,
+        align,
+      });
+    },
+    [onHover]
   );
 
   const xTitle = useMemo(() => (column ? "Season" : "Episode"), [column]);
@@ -262,7 +357,12 @@ const Heatmap = ({
   );
 
   return (
-    <Flex width={outerWidth} justify="center">
+    <Flex
+      ref={containerRef}
+      width={outerWidth}
+      justify="center"
+      position="relative"
+    >
       <svg height={height} width={width} style={{ overflow: "visible" }}>
         <g transform={`translate(${0},${0})`}>
           <text
@@ -334,13 +434,14 @@ const Heatmap = ({
                   colorScale={colorScale}
                   textScale={textScale}
                   column={column}
-                  onHover={onHover}
+                  onHover={onCellHover}
                 />
               ))}
             </g>
           </g>
         </g>
       </svg>
+      {tooltip && <EpisodeTooltip tooltip={tooltip} />}
     </Flex>
   );
 };
