@@ -53,6 +53,8 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       template: "index.html",
+      // Same Cloudflare Web Analytics site as vallandingham.me; only in production builds
+      cloudflareAnalyticsToken: prod ? "2b4df352ecf04cab9fc322e072c3ef88" : null,
     }),
     new MiniCssExtractPlugin(),
     new CopyWebpackPlugin({

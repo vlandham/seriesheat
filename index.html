@@ -48,20 +48,13 @@
       rel="stylesheet"
     />
     <title>SeriesHeat - Vallandingham</title>
-    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <% if (htmlWebpackPlugin.options.cloudflareAnalyticsToken) { %>
     <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=G-V0M52QM87J"
+      type="module"
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon='{"token": "<%= htmlWebpackPlugin.options.cloudflareAnalyticsToken %>"}'
     ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-
-      gtag("config", "G-V0M52QM87J");
-    </script>
+    <% } %>
   </head>
   <body>
     <div id="app-root"></div>
