@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 import {
   Modal,
@@ -13,6 +13,19 @@ import {
   Link,
   Heading,
 } from "@chakra-ui/react";
+import { fetchMeta } from "../utils/dataUtils";
+
+// "2026-11-15" -> "November 15, 2026" (parsed as UTC so it never shifts a day)
+function formatDataDate(dataDate: string): string | null {
+  const date = new Date(`${dataDate}T00:00:00Z`);
+  if (isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
 
 const InfoModal = ({
   isOpen,
@@ -21,6 +34,27 @@ const InfoModal = ({
   isOpen: boolean;
   onClose: () => void;
 }) => {
+  // Refresh date comes from the API (stored alongside the data in D1), so it
+  // updates on every data push without a UI deploy. Hidden if unavailable.
+  const [dataDate, setDataDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || dataDate) return;
+    let cancelled = false;
+    fetchMeta()
+      .then((meta) => {
+        if (!cancelled && meta.dataDate) {
+          setDataDate(formatDataDate(meta.dataDate));
+        }
+      })
+      .catch(() => {
+        // Leave the date hidden rather than show a wrong one.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, dataDate]);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
@@ -58,7 +92,7 @@ const InfoModal = ({
             >
               IMDb Datasets
             </Link>
-            . Data was downloaded on December 5th, 2025
+            .{dataDate && <> Data was last refreshed on {dataDate}.</>}
           </Text>
           <br />
           <Text>

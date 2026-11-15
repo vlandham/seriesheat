@@ -28,6 +28,20 @@ export const fetchSearch = async (
   }));
 };
 
+export interface DataMeta {
+  // YYYY-MM-DD: when IMDb published the snapshot the API is serving
+  dataDate: string | null;
+}
+
+export const fetchMeta = async (): Promise<DataMeta> => {
+  const response = await fetch(`${API_BASE_URL}/meta`);
+  if (!response.ok) {
+    throw new Error(`Meta fetch failed: ${response.statusText}`);
+  }
+  const data = await response.json();
+  return { dataDate: data.dataDate ?? null };
+};
+
 export function isNumeric(value: string | number) {
   if (typeof value === "number") return Number.isFinite(value);
   if (typeof value !== "string") return false;
